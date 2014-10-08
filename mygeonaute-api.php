@@ -30,19 +30,41 @@ function activityList ($ch)
 {
     curl_setopt ($ch, CURLOPT_POST, FALSE) ;
     curl_setopt ($ch, CURLOPT_URL,
-                 'http://www.mygeonaute.com/en-FR/portal/activities');
-    return curl_exec ($ch) ;
+                 'http://www.mygeonaute.com/en-FR/portal/activities') ;
+    $response = curl_exec ($ch) ;
+    $d = new DOMDocument () ;
+    $d -> loadHTML ($response) ;
+    $activities = $d -> getElementById ('activity-timeline') ;
+    $data_activities = $activities -> getAttribute ('data-activities') ;
+    return json_decode ($data_activities, TRUE) ;
 }
 
 // $activityid MUST be url encoded.
-// returns activity information
 function activity ($ch, $activityid)
 {
     curl_setopt ($ch, CURLOPT_POST, FALSE) ;
     curl_setopt ($ch, CURLOPT_URL,
                  'http://www.mygeonaute.com/en-FR/portal/activities/'
                 . $activityid);
-    return curl_exec ($ch) ;
+    $response = curl_exec ($ch) ;
+
+    $document = new DOMDocument ();
+    $document -> loadHTML ($response) ;
+    $xpath = new DOMXpath ($document) ;
+    $chart_values = $xpath -> query('//*[@class="chart-value"]') ;
+
+    // Put fetched values in an array indexed by data-name
+    $array = [] ;
+    foreach ($chart_values as $attr)
+    {
+        $name = $attr -> getAttribute ('data-name') ;
+        if (!isset ($array [$name]))
+        {
+            $array [$name] = $attr -> nodeValue ;
+        }
+    }
+
+    return $array ;
 }
 
 ?>
